@@ -4,6 +4,7 @@ pandas dataframes
 """
 
 import pandas as pd
+import numpy as np
 from io import StringIO
 
 from setuptools.config.pyprojecttoml import validate
@@ -228,6 +229,24 @@ def clean_player_name(name):
 
 	return name.strip()
 
+import pandas as pd
+
+# Example DataFrame
+data = {
+    'player_info': ['11 Joseph Tugler 6-8 230 Jr', '22 Mike Smith 6-2 210 Sr']
+}
+df = pd.DataFrame(data)
+
+def parse_player_info_from_depth_chart(info):
+	parts = info.split()
+	return pd.Series({
+		'Number': int(parts[0]),
+		'Name':' '.join(parts[1:-3]),
+		'Height': parts[-3],
+		'Weight': int(parts[-2]),
+		'ClassYear': parts[-1]
+	})
+
 def get_depth_chart(browser: CloudScraper, team: str, season: Optional[int]=None, conference_only: bool=False):
 	url = 'https://kenpom.com/team.php'
 
@@ -248,7 +267,24 @@ def get_depth_chart(browser: CloudScraper, team: str, season: Optional[int]=None
 	depth_chart = teams_page.find("table", id="dc-table")
 	depth_chart_df = pd.read_html(StringIO(str(depth_chart)))[0]
 
-	breakpoint = "hey"
+	depth_chart_df['depth'] = depth_chart_df.index + 1
+	df_long = depth_chart_df.melt(id_vars='depth', var_name='position', value_name='player_info')
+
+	percentage_rows = df_long[df_long['position'].str.endswith('.1')].copy()
+	percentage_rows['position'] = percentage_rows['position'].str.replace('.1', '', regex=False)
+	percentage_rows['percentage'] = percentage_rows['player_info']
+
+	player_rows = df_long[~df_long['position'].str.endswith('.1')].copy()
+
+	df_long_merged = player_rows.merge(
+		percentage_rows[['depth', 'position', 'percentage']],
+		on=['depth', 'position'],
+		how='left'
+	)
+	df_long_merged = df_long_merged[df_long_merged['player_info'].notna().copy()]
+	df_parsed = df_long_merged.join(df_long_merged['player_info'].apply(parse_player_info_from_depth_chart))
+
+	return df_parsed
 
 
 
