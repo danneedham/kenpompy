@@ -239,11 +239,19 @@ df = pd.DataFrame(data)
 
 def parse_player_info_from_depth_chart(info):
 	parts = info.split()
+	try:
+		weight = int(parts[-2])
+		height = parts[-3]
+		name = ' '.join(parts[1:-3])
+	except ValueError as e:
+		weight = np.nan
+		height = parts[-2]
+		name = ' '.join(parts[1:-2])
 	return pd.Series({
 		'Number': int(parts[0]),
-		'Name':' '.join(parts[1:-3]),
-		'Height': parts[-3],
-		'Weight': int(parts[-2]),
+		'Name': name,
+		'Height': height,
+		'Weight': weight,
 		'ClassYear': parts[-1]
 	})
 
