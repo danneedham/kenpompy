@@ -229,30 +229,42 @@ def clean_player_name(name):
 
 	return name.strip()
 
-import pandas as pd
-
-# Example DataFrame
-data = {
-    'player_info': ['11 Joseph Tugler 6-8 230 Jr', '22 Mike Smith 6-2 210 Sr']
-}
-df = pd.DataFrame(data)
 
 def parse_player_info_from_depth_chart(info):
-	parts = info.split()
-	try:
-		weight = int(parts[-2])
-		height = parts[-3]
-		name = ' '.join(parts[1:-3])
-	except ValueError as e:
-		weight = np.nan
-		height = parts[-2]
-		name = ' '.join(parts[1:-2])
+	tokens = info.split()
+
+	number = np.nan
+	height = np.nan
+	weight = np.nan
+	class_year = np.nan
+	name_parts = []
+
+	CLASS_YEARS = {'Fr', 'So', 'Jr', 'Sr'}
+	HEIGHT_PATTERN = re.compile(r"^\d{1,2}-\d{1,2}$")
+
+	if tokens and tokens[0].isdigit():
+		number = int(tokens[0])
+		tokens = tokens[1:]
+
+	for token in tokens:
+		upper = token.upper()
+		if HEIGHT_PATTERN.match(token) and pd.isna(height):
+			height = token
+		elif upper in CLASS_YEARS and pd.isna(class_year):
+			class_year = upper
+		elif token.isdigit() and pd.isna(weight):
+			weight = int(token)
+		else:
+			name_parts.append(token)
+
+	name = " ".join(name_parts) if name_parts else np.nan
+
 	return pd.Series({
-		'Number': int(parts[0]),
-		'Name': name,
-		'Height': height,
-		'Weight': weight,
-		'ClassYear': parts[-1]
+		"Number": number,
+		"Name": name,
+		"Height": height,
+		"Weight": weight,
+		"ClassYear": class_year
 	})
 
 def get_depth_chart(browser: CloudScraper, team: str, season: Optional[int]=None, conference_only: bool=False):
