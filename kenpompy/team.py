@@ -239,7 +239,7 @@ def parse_player_info_from_depth_chart(info):
 	class_year = np.nan
 	name_parts = []
 
-	CLASS_YEARS = {'Fr', 'So', 'Jr', 'Sr'}
+	CLASS_YEARS = {'FR', 'SO', 'JR', 'SR'}
 	HEIGHT_PATTERN = re.compile(r"^\d{1,2}-\d{1,2}$")
 
 	if tokens and tokens[0].isdigit():
